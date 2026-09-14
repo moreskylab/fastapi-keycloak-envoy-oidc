@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "security:openssf-scorecard",
+    ":pinAllExceptPeerDependencies"
+  ],
+  "labels": ["dependencies"],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "critical"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["pip_requirements", "pip-compile", "poetry", "pep621"],
+      "groupName": "python-dependencies",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "groupName": "frontend-dependencies",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["terraform"],
+      "groupName": "terraform-providers",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "groupName": "docker-base-images",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}

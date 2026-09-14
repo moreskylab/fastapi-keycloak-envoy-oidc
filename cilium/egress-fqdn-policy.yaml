@@ -1,0 +1,21 @@
+# DNS-aware FQDN egress allowlist for Keycloak → Google OIDC federation
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: egress-fqdn-allowlist
+  namespace: fastapi-oidc
+spec:
+  description: "Restrict external egress to known FQDNs only (Google OIDC)"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  egress:
+    - toFQDNs:
+        - matchName: "accounts.google.com"
+        - matchName: "oauth2.googleapis.com"
+        - matchName: "www.googleapis.com"
+        - matchName: "openidconnect.googleapis.com"
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP

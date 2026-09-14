@@ -1,0 +1,15 @@
+# CiliumClusterwideNetworkPolicy — Default deny all traffic cluster-wide
+# Must be deployed at sync wave 1, immediately after Cilium CNI is ready.
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  description: "Default deny all ingress and egress across the cluster"
+  endpointSelector: {}
+  ingressDeny:
+    - fromEntities:
+        - world
+  egressDeny:
+    - toEntities:
+        - world

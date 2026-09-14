@@ -1,0 +1,137 @@
+# =============================================================================
+# Default Helm Values — Base Configuration
+# =============================================================================
+# Environment-specific overrides in values-{dev,staging,prod}.yaml
+# =============================================================================
+
+global:
+  namespace: fastapi-oidc
+  imageRegistry: "" # Set to nexus.internal in prod overlays
+  imagePullPolicy: IfNotPresent
+
+# ── Backend (FastAPI) ──
+backend:
+  replicas: 1
+  image:
+    repository: fastapi-oidc/backend
+    tag: latest
+  port: 8000
+  env:
+    KEYCLOAK_URL: http://keycloak:8080
+    KEYCLOAK_REALM: oidc-demo
+    CORS_ORIGIN: http://localhost:5173
+    LOG_LEVEL: INFO
+    ENVIRONMENT: dev
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  probes:
+    liveness:
+      path: /healthz
+      initialDelaySeconds: 10
+      periodSeconds: 15
+    readiness:
+      path: /readyz
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    startup:
+      path: /healthz
+      failureThreshold: 30
+      periodSeconds: 2
+
+# ── Frontend (Nginx) ──
+frontend:
+  replicas: 1
+  image:
+    repository: fastapi-oidc/frontend
+    tag: latest
+  port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+# ── Keycloak ──
+keycloak:
+  replicas: 1
+  image:
+    repository: quay.io/keycloak/keycloak
+    tag: "26.0"
+  port: 8080
+  adminUser: admin
+  adminPasswordSecret: app-secrets
+  adminPasswordKey: KEYCLOAK_ADMIN_PASSWORD
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+# ── PostgreSQL ──
+postgres:
+  replicas: 1
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  port: 5432
+  database: keycloak
+  user: keycloak
+  passwordSecret: app-secrets
+  passwordKey: POSTGRES_PASSWORD
+  storage:
+    size: 5Gi
+    storageClass: gp3
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ── Envoy Gateway ──
+gateway:
+  className: envoy
+  host: "*.example.com"
+  tls:
+    enabled: false
+    secretName: api-tls-secret
+
+# ── Security Policy (JWT validation) ──
+securityPolicy:
+  enabled: true
+  jwksUri: ""  # Derived from keycloak URL at template time
+
+# ── External Secrets ──
+externalSecrets:
+  enabled: false
+  secretStore:
+    name: vault-backend
+    kind: ClusterSecretStore
+  refreshInterval: 1h
+
+# ── Observability ──
+serviceMonitor:
+  enabled: true
+  interval: 30s
+
+# ── PDB ──
+pdb:
+  enabled: false
+  minAvailable: 1
+
+# ── Autoscaling ──
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilization: 70

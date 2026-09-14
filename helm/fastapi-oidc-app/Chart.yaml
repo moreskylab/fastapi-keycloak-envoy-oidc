@@ -1,0 +1,14 @@
+apiVersion: v2
+name: fastapi-oidc-app
+description: Zero Trust OIDC Platform — FastAPI + Keycloak + Envoy Gateway
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - oidc
+  - zero-trust
+  - fastapi
+  - keycloak
+  - envoy-gateway
+maintainers:
+  - name: Platform Team

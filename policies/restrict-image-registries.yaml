@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+  annotations:
+    policies.kyverno.io/title: Restrict Image Registries
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Only images from approved registries (Nexus proxy, Quay, official Docker Hub)
+      are allowed. Prevents pulling from unknown/untrusted sources.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: validate-registries
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+      validate:
+        message: "Images must be from approved registries: nexus.internal/*, quay.io/keycloak/*, docker.io/library/*, postgres:*"
+        pattern:
+          spec:
+            containers:
+              - image: "nexus.internal/* | quay.io/keycloak/* | docker.io/library/* | postgres:* | nginx:*"

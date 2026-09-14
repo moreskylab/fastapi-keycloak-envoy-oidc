@@ -1,0 +1,20 @@
+# PostgreSQL: Only Keycloak can connect
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: postgres-policy
+  namespace: fastapi-oidc
+spec:
+  description: "PostgreSQL: Only Keycloak can connect, port 5432 only"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: keycloak
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+  egress: []

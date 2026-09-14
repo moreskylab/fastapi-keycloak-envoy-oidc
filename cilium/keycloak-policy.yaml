@@ -1,0 +1,29 @@
+# Keycloak network policy
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: keycloak-policy
+  namespace: fastapi-oidc
+spec:
+  description: "Keycloak: browser/Envoy ingress, Google OIDC + PostgreSQL egress"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloak
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: envoy-gateway
+        - matchLabels:
+            app.kubernetes.io/name: backend
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: postgresql
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP

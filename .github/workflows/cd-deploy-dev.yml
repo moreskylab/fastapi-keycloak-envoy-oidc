@@ -1,0 +1,50 @@
+# =============================================================================
+# CD: Auto-deploy to Dev (triggered by successful build)
+# =============================================================================
+
+name: CD — Deploy Dev
+
+on:
+  workflow_run:
+    workflows: ["CI — Build & Publish"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-dev:
+    name: "Deploy to Dev"
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    environment: dev
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name fastapi-oidc-dev --region us-east-1
+
+      - name: Sync ArgoCD Application
+        run: |
+          kubectl exec -n argocd deploy/argocd-server -- \
+            argocd app sync fastapi-oidc-app-dev --grpc-web --force
+
+      - name: Wait for healthy
+        run: |
+          kubectl exec -n argocd deploy/argocd-server -- \
+            argocd app wait fastapi-oidc-app-dev --health --timeout 300 --grpc-web
+
+      - name: Smoke test
+        run: |
+          ENDPOINT=$(kubectl get gateway -n fastapi-oidc oidc-gateway -o jsonpath='{.status.addresses[0].value}')
+          curl -sf "http://${ENDPOINT}/healthz"
+          curl -sf "http://${ENDPOINT}/api/public"

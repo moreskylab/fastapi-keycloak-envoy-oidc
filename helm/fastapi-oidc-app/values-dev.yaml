@@ -1,0 +1,21 @@
+# Dev environment overrides
+backend:
+  replicas: 1
+  env:
+    LOG_LEVEL: DEBUG
+    ENVIRONMENT: dev
+    CORS_ORIGIN: http://localhost:5173
+
+gateway:
+  host: "dev.api.example.com"
+  tls:
+    enabled: false
+
+externalSecrets:
+  enabled: false
+
+pdb:
+  enabled: false
+
+autoscaling:
+  enabled: false

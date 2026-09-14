@@ -1,0 +1,44 @@
+{{- if .Values.securityPolicy.enabled }}
+# Envoy Gateway SecurityPolicy — Edge JWT Validation (OWASP A01, A02)
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: jwt-auth-policy
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: oidc-routes
+  jwt:
+    providers:
+      - name: keycloak
+        issuer: {{ printf "%s/realms/%s" (trimSuffix "/" (toString .Values.backend.env.KEYCLOAK_URL)) .Values.backend.env.KEYCLOAK_REALM }}
+        remoteJWKS:
+          uri: {{ printf "%s/realms/%s/protocol/openid-connect/certs" (trimSuffix "/" (toString .Values.backend.env.KEYCLOAK_URL)) .Values.backend.env.KEYCLOAK_REALM }}
+        claimToHeaders:
+          - header: X-User-Sub
+            claim: sub
+          - header: X-User-Email
+            claim: email
+          - header: X-User-Roles
+            claim: realm_access.roles
+    rules:
+      # Allow unauthenticated access to public routes
+      - match:
+          prefix: /api/public
+        requires: {}
+      - match:
+          prefix: /healthz
+        requires: {}
+      - match:
+          prefix: /readyz
+        requires: {}
+      # Require valid JWT for secure routes
+      - match:
+          prefix: /api/secure
+        requires:
+          providerName: keycloak
+{{- end }}

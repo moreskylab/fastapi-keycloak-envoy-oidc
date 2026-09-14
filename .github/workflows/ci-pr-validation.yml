@@ -1,0 +1,120 @@
+# =============================================================================
+# CI: PR Validation — Quality Gate
+# =============================================================================
+# Runs on every PR to main/develop. No secrets, no cloud credentials.
+# All jobs must pass before merge is allowed.
+# =============================================================================
+
+name: CI — PR Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-lint:
+    name: "Backend: Lint & Type Check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: |
+          cd backend
+          uv sync --frozen
+          uv run ruff check .
+          uv run mypy app/
+
+  backend-test:
+    name: "Backend: Unit Tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: |
+          cd backend
+          uv sync --frozen
+          uv run pytest --cov --cov-fail-under=80 --cov-report=xml
+      - uses: codecov/codecov-action@v5
+        with:
+          files: backend/coverage.xml
+        if: always()
+
+  frontend-lint:
+    name: "Frontend: Type Check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: |
+          cd frontend
+          npm ci
+          npx tsc --noEmit
+
+  trivy-fs-scan:
+    name: "Security: Trivy FS Scan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+  sast-scan:
+    name: "Security: SAST (Semgrep)"
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: semgrep scan --config auto --error --json --output semgrep-results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+        if: always()
+
+  helm-lint:
+    name: "Helm: Lint & Validate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: azure/setup-helm@v4
+      - run: helm lint helm/fastapi-oidc-app/ -f helm/fastapi-oidc-app/values-dev.yaml
+
+  terraform-validate:
+    name: "Terraform: Validate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: hashicorp/setup-terraform@v3
+      - run: |
+          cd terraform
+          terraform init -backend=false
+          terraform validate
+          terraform fmt -check -recursive
+
+  docker-compose-validate:
+    name: "Docker Compose: Config Validate"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - run: docker compose config --quiet

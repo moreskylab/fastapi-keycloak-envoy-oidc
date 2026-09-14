@@ -1,0 +1,27 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: backend
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: backend
+  minReplicaCount: {{ .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.autoscaling.maxReplicas }}
+  pollingInterval: 15
+  cooldownPeriod: 60
+  triggers:
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: {{ .Values.autoscaling.targetCPUUtilization | quote }}
+    - type: prometheus
+      metadata:
+        serverAddress: http://mimir.observability:9009/prometheus
+        metricName: http_requests_per_second
+        query: sum(rate(http_requests_total{service="backend"}[1m]))
+        threshold: "100"
+{{- end }}

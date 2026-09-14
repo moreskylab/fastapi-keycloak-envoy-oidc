@@ -1,0 +1,32 @@
+# Staging environment overrides
+backend:
+  replicas: 2
+  env:
+    LOG_LEVEL: INFO
+    ENVIRONMENT: staging
+    CORS_ORIGIN: https://staging.example.com
+
+frontend:
+  replicas: 2
+
+keycloak:
+  replicas: 1
+
+gateway:
+  host: "staging.api.example.com"
+  tls:
+    enabled: true
+    secretName: api-tls-secret
+
+externalSecrets:
+  enabled: true
+  refreshInterval: 30m
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5

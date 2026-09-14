@@ -1,0 +1,20 @@
+# L7 policy for frontend Nginx
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: frontend-policy
+  namespace: fastapi-oidc
+spec:
+  description: "Frontend: Envoy ingress only, no egress"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: envoy-gateway
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+  egress: []

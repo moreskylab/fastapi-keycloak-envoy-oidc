@@ -1,0 +1,22 @@
+# CODEOWNERS — enforce review gates for security-critical paths
+# Require security team review for all infrastructure, policy, and CI/CD changes.
+
+# Infrastructure
+/terraform/         @platform-team @security-team
+/cilium/            @platform-team @security-team
+/policies/          @security-team
+
+# ArgoCD / GitOps
+/argocd/            @platform-team
+/helm/              @platform-team
+
+# CI/CD
+/.github/workflows/ @platform-team @security-team
+
+# Application
+/backend/           @backend-team
+/frontend/          @frontend-team
+
+# Governance
+SECURITY.md         @security-team
+CODEOWNERS          @platform-team

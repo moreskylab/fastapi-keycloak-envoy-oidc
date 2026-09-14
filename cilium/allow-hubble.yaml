@@ -1,0 +1,26 @@
+# Allow Hubble relay traffic for network observability
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: allow-hubble
+spec:
+  description: "Allow Hubble relay and UI communication"
+  endpointSelector:
+    matchLabels:
+      k8s:io.kubernetes.pod.namespace: kube-system
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: hubble-relay
+      toPorts:
+        - ports:
+            - port: "4244"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: hubble-ui
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP

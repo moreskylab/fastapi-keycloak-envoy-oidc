@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Zero Trust OIDC Demo — FastAPI + Keycloak + Envoy Gateway" />
+    <title>Zero Trust OIDC Demo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>🔐 Zero Trust OIDC Platform</h1>
+        <p class="subtitle">FastAPI · Keycloak · Envoy Gateway</p>
+      </header>
+
+      <main>
+        <!-- Auth Controls -->
+        <section id="auth-section">
+          <button id="btn-login" class="btn btn-primary">Login with Keycloak</button>
+          <button id="btn-logout" class="btn btn-danger" style="display: none">Logout</button>
+          <div id="user-info" style="display: none"></div>
+        </section>
+
+        <!-- API Test Panel -->
+        <section id="api-section" style="display: none">
+          <h2>API Endpoints</h2>
+          <div class="btn-group">
+            <button id="btn-public" class="btn btn-secondary">GET /api/public</button>
+            <button id="btn-me" class="btn btn-secondary">GET /api/secure/me</button>
+            <button id="btn-rbac" class="btn btn-secondary">GET /api/secure/rbac-check</button>
+          </div>
+          <pre id="api-response"></pre>
+        </section>
+      </main>
+
+      <footer>
+        <p>Defense-in-Depth: Envoy Gateway (Edge JWT) → FastAPI (RBAC) → Cilium (L7 Network Policy)</p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+# ArgoCD ApplicationSet for platform components
+# Generates one Application per platform component from a list generator.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: platform-components
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - name: cilium
+            namespace: kube-system
+            chart: cilium/cilium
+            repoURL: https://helm.cilium.io/
+            targetRevision: "1.17.*"
+            syncWave: "0"
+          - name: cert-manager
+            namespace: cert-manager
+            chart: jetstack/cert-manager
+            repoURL: https://charts.jetstack.io
+            targetRevision: "v1.16.*"
+            syncWave: "1"
+          - name: vault
+            namespace: vault
+            chart: hashicorp/vault
+            repoURL: https://helm.releases.hashicorp.com
+            targetRevision: "0.29.*"
+            syncWave: "3"
+          - name: external-secrets
+            namespace: external-secrets
+            chart: external-secrets/external-secrets
+            repoURL: https://charts.external-secrets.io
+            targetRevision: "0.12.*"
+            syncWave: "4"
+          - name: kyverno
+            namespace: kyverno
+            chart: kyverno/kyverno
+            repoURL: https://kyverno.github.io/kyverno/
+            targetRevision: "3.3.*"
+            syncWave: "5"
+          - name: keda
+            namespace: keda
+            chart: kedacore/keda
+            repoURL: https://kedacore.github.io/charts
+            targetRevision: "2.16.*"
+            syncWave: "5"
+          - name: envoy-gateway
+            namespace: envoy-gateway-system
+            chart: envoy-gateway/gateway-helm
+            repoURL: https://gateway.envoyproxy.io/charts
+            targetRevision: "1.2.*"
+            syncWave: "6"
+  template:
+    metadata:
+      name: "platform-{{name}}"
+      namespace: argocd
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{syncWave}}"
+    spec:
+      project: default
+      source:
+        repoURL: "{{repoURL}}"
+        chart: "{{chart}}"
+        targetRevision: "{{targetRevision}}"
+        helm:
+          releaseName: "{{name}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{namespace}}"
+      syncPolicy:
+        automated:
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true

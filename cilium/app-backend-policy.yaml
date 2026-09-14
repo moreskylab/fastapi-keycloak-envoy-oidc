@@ -1,0 +1,43 @@
+# L7 HTTP-aware policy for FastAPI backend
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: backend-policy
+  namespace: fastapi-oidc
+spec:
+  description: "FastAPI backend: Envoy ingress only, Keycloak JWKS egress only"
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: envoy-gateway
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+          rules:
+            http:
+              - method: GET
+                path: "/api/public"
+              - method: GET
+                path: "/api/secure/.*"
+              - method: GET
+                path: "/healthz"
+              - method: GET
+                path: "/readyz"
+              - method: GET
+                path: "/metrics"
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: keycloak
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+          rules:
+            http:
+              - method: GET
+                path: "/realms/.*/protocol/openid-connect/certs"
